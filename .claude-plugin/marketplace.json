@@ -10,7 +10,10 @@
     {
       "name": "opencode-toolkit",
       "description": "OpenCode MCP integration for Claude Code — audit, implement, verify, review, and debug via OpenCode",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "lllyys/opencode-toolkit-for-claude"
+      },
       "category": "developer-tools"
     }
   ]
