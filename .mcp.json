@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "opencode": {
+      "command": "npx",
+      "args": ["-y", "opencode-mcp"]
+    }
+  }
+}

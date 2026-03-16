@@ -1,0 +1,133 @@
+---
+description: Send a plan to OpenCode for architectural review — checks consistency, completeness, feasibility, ambiguity, and risk
+---
+
+## User Input
+
+```text
+$ARGUMENTS
+```
+
+## What This Does
+
+Sends a plan document to OpenCode running in an isolated context for independent review. OpenCode reads the plan (and optional context files), then evaluates it across 5 dimensions that matter for plans — not code quality, but **buildability**.
+
+## Model & Settings Selection
+
+Follow the instructions in `commands/shared/model-selection.md` to discover available models and present choices.
+
+- **Recommended model**: first available from preflight
+
+## Workflow
+
+### Step 1: Determine Scope
+
+Parse `$ARGUMENTS` to find the plan:
+
+| Input | Interpretation |
+|-------|----------------|
+| (empty) | Look for `dev-memo/plan.md`, then `plan.md`, then ask |
+| `path/to/plan.md` | Use that file |
+| `path/to/plan.md +context1.md +context2.md` | Plan file + additional context files |
+
+Read the plan file. If it references other documents (design docs, specs, AGENTS.md), read those too — they become context.
+
+### Step 2: Send Plan for Review
+
+Follow `commands/shared/opencode-call.md` for availability test and call pattern.
+
+- **Command persona**: "You are an architecture reviewer evaluating plan feasibility."
+- **Use `mcp__opencode__opencode_ask`** (plan review is read-only)
+
+Send a SINGLE OpenCode call with the full plan (no per-file splitting):
+
+```
+prompt: "You are an architecture reviewer evaluating plan feasibility.
+
+{config_focus_instructions if present}
+{config_project_instructions if present}
+
+Read these files, then evaluate the plan across all 5 dimensions below.
+Be critical — flag anything that would cause problems during implementation.
+
+Files to read:
+- {plan_file}
+- {context_files...}
+
+## Dimension 1: Internal Consistency
+Do decisions contradict each other? (conflicting requirements, data model mismatches, dependency inversions)
+
+## Dimension 2: Completeness
+What's missing? (error paths, startup/shutdown, edge cases, migration, configuration)
+
+## Dimension 3: Feasibility
+Can this be built as described? (API correctness, technology mismatches, performance assumptions, undeclared dependencies)
+
+## Dimension 4: Ambiguity
+Where would an implementer get stuck? (vague specs, undefined behavior, multiple interpretations, missing examples)
+
+## Dimension 5: Risk & Sequencing
+What's the hardest part, and is the build order correct? (high-risk items buried late, unacknowledged dependencies, single points of failure)
+
+## Output Format
+For each dimension:
+**[Dimension N: Name]**
+| # | Severity | Finding | Location | Recommendation |
+|---|----------|---------|----------|----------------|
+
+Then:
+**Overall Verdict**: READY TO BUILD / NEEDS REVISION / MAJOR GAPS
+**Top 3 Risks** (ordered by impact)
+**Strongest aspects** of the plan"
+```
+
+### Step 3: Present Findings
+
+Display OpenCode's review. Add your own assessment if you disagree or notice something OpenCode missed.
+
+```markdown
+# Plan Review
+
+**Plan**: {filename}
+**Model**: {chosen_model}
+**Session ID**: `{sessionId}` _(use `/continue {sessionId}` to iterate on findings)_
+**Verdict**: READY TO BUILD / NEEDS REVISION / MAJOR GAPS
+
+## Findings by Dimension
+
+### 1. Internal Consistency
+{findings table or "No issues found"}
+
+### 2. Completeness
+{findings table}
+
+### 3. Feasibility
+{findings table}
+
+### 4. Ambiguity
+{findings table}
+
+### 5. Risk & Sequencing
+{findings table}
+
+## Top Risks
+1. ...
+2. ...
+3. ...
+
+## Strengths
+- ...
+
+## Additional Notes
+{Any additional observations}
+```
+
+### Step 4: Fallback
+
+Follow `commands/shared/fallback.md`.
+
+1. Read the plan using the Read tool
+2. Walk through all 5 dimensions as described above
+3. Cross-reference: for each decision, check if it conflicts with any other
+4. Trace data flow: follow a message from input to output — does every step exist?
+5. Report in the same format
