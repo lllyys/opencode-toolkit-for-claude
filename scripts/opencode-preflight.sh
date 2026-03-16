@@ -113,14 +113,14 @@ else
     info "Auth status: api_key"
   fi
 
-  # Check opencode.json configs for provider keys
+  # Check opencode.json configs for provider keys (pass path safely via argv)
   for config_path in "./opencode.json" "$HOME/.config/opencode/opencode.json"; do
     if [[ -f "$config_path" ]]; then
       if command -v python3 &>/dev/null; then
-        config_providers=$(python3 -c "
+        config_providers=$(python3 - "$config_path" <<'PYEOF'
 import json, sys
 try:
-    with open('$config_path') as f:
+    with open(sys.argv[1]) as f:
         data = json.load(f)
     providers = data.get('provider', {})
     for name in providers:
@@ -128,7 +128,8 @@ try:
             print(name)
 except Exception:
     pass
-" 2>/dev/null) || true
+PYEOF
+        ) || true
         while IFS= read -r p; do
           [[ -n "$p" ]] && PROVIDERS+=("$p") && AUTH_STATUS="config"
         done <<< "$config_providers"
@@ -155,64 +156,71 @@ info "Providers: ${PROVIDERS[*]}"
 MODELS=()
 MODELS_DETAIL="[]"
 
-# Try to get models via `opencode models` for each provider
+# Try to get models via `opencode models` for each provider.
+# CLI output is passed via stdin to Python to avoid shell injection.
 if command -v python3 &>/dev/null; then
-  ALL_MODELS_JSON="[]"
+  ALL_MODELS_TMP=$(mktemp)
+  echo "[]" > "$ALL_MODELS_TMP"
 
   for provider in "${PROVIDERS[@]}"; do
     MODELS_OUTPUT=$(opencode models "$provider" 2>/dev/null) || true
     if [[ -n "$MODELS_OUTPUT" ]]; then
-      # Parse model list from CLI output
-      provider_models=$(python3 -c "
-import sys, json, re
+      # Parse model list from CLI output (stdin) with provider as argv[1]
+      provider_models=$(echo "$MODELS_OUTPUT" | python3 - "$provider" <<'PYEOF'
+import sys, json
 
-output = '''$MODELS_OUTPUT'''
+provider = sys.argv[1]
+output = sys.stdin.read()
 models = []
 for line in output.strip().split('\n'):
     line = line.strip()
-    if not line or line.startswith('─') or line.startswith('=') or line.lower().startswith('model'):
+    if not line or line.startswith('\u2500') or line.startswith('=') or line.lower().startswith('model'):
         continue
-    # Try to extract model identifier (provider/model or just model name)
     parts = line.split()
     if parts:
         model_id = parts[0]
-        # Skip table decoration
         if model_id.startswith('|') or model_id.startswith('+'):
             model_id = model_id.strip('|').strip()
-        if model_id and not model_id.startswith('─'):
-            # Ensure provider/model format
+        if model_id and not model_id.startswith('\u2500'):
             if '/' not in model_id:
-                model_id = '$provider/' + model_id
+                model_id = provider + '/' + model_id
             desc = ' '.join(parts[1:]).strip('|').strip() if len(parts) > 1 else model_id
             models.append({'slug': model_id, 'description': desc})
 print(json.dumps(models))
-" 2>/dev/null) || true
+PYEOF
+      ) || true
 
       if [[ -n "$provider_models" && "$provider_models" != "[]" ]]; then
-        ALL_MODELS_JSON=$(python3 -c "
-import json
-existing = json.loads('''$ALL_MODELS_JSON''')
+        # Merge via temp file (no shell interpolation into Python)
+        python3 - "$ALL_MODELS_TMP" <<PYEOF2
+import json, sys
+tmp_path = sys.argv[1]
+with open(tmp_path) as f:
+    existing = json.load(f)
 new = json.loads('''$provider_models''')
 existing.extend(new)
-print(json.dumps(existing))
-" 2>/dev/null) || true
+with open(tmp_path, 'w') as f:
+    json.dump(existing, f)
+PYEOF2
       fi
     fi
   done
 
-  MODELS_DETAIL="$ALL_MODELS_JSON"
+  MODELS_DETAIL=$(cat "$ALL_MODELS_TMP")
+  rm -f "$ALL_MODELS_TMP"
 
   # Extract model slugs
   while IFS= read -r slug; do
     [[ -n "$slug" ]] && MODELS+=("$slug")
-  done < <(python3 -c "
-import json
-for m in json.loads('''$MODELS_DETAIL'''):
+  done < <(echo "$MODELS_DETAIL" | python3 -c "
+import json, sys
+for m in json.load(sys.stdin):
     print(m['slug'])
 " 2>/dev/null)
 fi
 
-# If no models discovered via CLI, add well-known models for detected providers
+# If no models discovered via CLI, add well-known models for detected providers.
+# NOTE: These are fallback defaults — update periodically as model names change.
 if [[ ${#MODELS[@]} -eq 0 ]]; then
   info "No models discovered via CLI, using well-known defaults for configured providers"
   WELL_KNOWN_DETAIL="["
@@ -220,7 +228,7 @@ if [[ ${#MODELS[@]} -eq 0 ]]; then
   for provider in "${PROVIDERS[@]}"; do
     case "$provider" in
       anthropic)
-        for m in "anthropic/claude-sonnet-4-5" "anthropic/claude-haiku-3-5"; do
+        for m in "anthropic/claude-sonnet-4-5" "anthropic/claude-haiku-4-5"; do
           if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
           WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
           MODELS+=("$m")
@@ -234,7 +242,7 @@ if [[ ${#MODELS[@]} -eq 0 ]]; then
         done
         ;;
       google)
-        for m in "google/gemini-2.0-flash" "google/gemini-2.5-pro"; do
+        for m in "google/gemini-2.5-flash" "google/gemini-2.5-pro"; do
           if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
           WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
           MODELS+=("$m")

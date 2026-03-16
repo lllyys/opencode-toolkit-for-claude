@@ -20,12 +20,14 @@ This returns health status, providers, and project info. If it errors out or ret
 
 Concatenate these parts into a single prompt string:
 
-1. **Command persona** — the role-specific persona from the calling command (e.g. "You are a thorough security and code quality auditor.")
+1. **Command persona** — the role-specific persona from the calling command's `Command persona` field (e.g. "You are a thorough security and code quality auditor.")
 2. **Config focus instructions** — `{config_focus_instructions}` from `.opencode-toolkit.md` Audit Focus section (if present)
 3. **Config project instructions** — `{config_project_instructions}` from `.opencode-toolkit.md` Project-Specific Instructions section (if present)
-4. **Task prompt** — the command-specific task instructions
+4. **Task prompt** — the command-specific task instructions (from the command's `prompt:` block)
 
 If parts 2 or 3 are empty, omit them. Separate non-empty parts with a blank line.
+
+**IMPORTANT**: The persona is injected here automatically from the `Command persona` field. Commands MUST NOT duplicate the persona text inside their `prompt:` block — that would cause it to appear twice.
 
 ### Canonical mcp__opencode__opencode_ask call (read-only tasks)
 

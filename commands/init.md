@@ -100,7 +100,7 @@ AskUserQuestion:
 
 Write `.opencode-toolkit.md` to the project root with the gathered information:
 
-```markdown
+````markdown
 # OpenCode Toolkit Configuration
 
 Project-specific settings for opencode-toolkit commands.
@@ -155,7 +155,7 @@ Use this to tell OpenCode about your project's conventions, architecture, or con
 {stack-specific defaults, e.g.:
 "This is a TypeScript project using React. Follow existing patterns in src/components/."}
 ```
-```
+````
 
 **Focus-specific instructions** (for the "Additional instructions" section):
 

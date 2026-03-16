@@ -47,12 +47,7 @@ Follow `commands/shared/opencode-call.md` for availability test and call pattern
 - **Use `mcp__opencode__opencode_ask`** (verification is read-only)
 
 ```
-prompt: "You are a verification auditor. Only check issues from a previous audit report.
-
-{config_focus_instructions if present}
-{config_project_instructions if present}
-
-Your ONLY job is to confirm fixes from a previous audit.
+prompt: "Your ONLY job is to confirm fixes from a previous audit.
 
 ## Previous Audit Report
 {AUDIT_REPORT_CONTENT}

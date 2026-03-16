@@ -42,12 +42,7 @@ Follow `commands/shared/opencode-call.md` for availability test and call pattern
 Send a SINGLE OpenCode call with the full plan (no per-file splitting):
 
 ```
-prompt: "You are an architecture reviewer evaluating plan feasibility.
-
-{config_focus_instructions if present}
-{config_project_instructions if present}
-
-Read these files, then evaluate the plan across all 5 dimensions below.
+prompt: "Read these files, then evaluate the plan across all 5 dimensions below.
 Be critical — flag anything that would cause problems during implementation.
 
 Files to read:

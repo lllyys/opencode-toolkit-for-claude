@@ -53,12 +53,7 @@ Follow `commands/shared/opencode-call.md` for availability test and call pattern
 For each relevant file (files matching Grep results, files in the call chain, up to 10 files max):
 
 ```
-prompt: "You are a root cause analyst. Trace bugs to their origin.
-
-{config_focus_instructions if present}
-{config_project_instructions if present}
-
-Analyze {filename} for potential causes of this bug:
+prompt: "Analyze {filename} for potential causes of this bug:
 
 BUG DESCRIPTION: {user's bug description}
 

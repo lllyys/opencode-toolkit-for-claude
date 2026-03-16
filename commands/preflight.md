@@ -24,7 +24,7 @@ After the script, also test the MCP server directly:
 mcp__opencode__opencode_setup
 ```
 
-This verifies the `opencode-mcp` bridge is running and can reach the OpenCode server.
+This verifies the `opencode-mcp` bridge is running and can reach the OpenCode server. If `opencode_setup` errors out or is unreachable, report "MCP server: Not connected" and suggest checking that `opencode serve` is running or that `opencode-mcp` is installed (`npm i -g opencode-mcp`).
 
 ### Step 3: Display results
 

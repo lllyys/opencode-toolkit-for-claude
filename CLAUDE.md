@@ -41,8 +41,8 @@ scripts/
   - `mcp__opencode__opencode_reply` — continue an existing session (for multi-turn workflows)
   - `mcp__opencode__opencode_setup` — health check and provider/model discovery
   - `mcp__opencode__opencode_provider_test` — test provider connectivity
-- Every command that calls OpenCode MUST include a role-specific persona as the first part of the prompt.
-- Every command report MUST include the `sessionId` from the OpenCode response so users can follow up with `/continue`.
+- Every command that calls OpenCode MUST specify a `Command persona` field. The persona is injected into the prompt by `opencode-call.md`'s builder — commands MUST NOT duplicate it inside their `prompt:` block.
+- Every command report MUST include the `sessionId` from the OpenCode response so users can follow up with `/continue`. Exception: `/preflight` does not produce a sessionId (it only checks connectivity).
 - Multi-step workflows (like audit→fix→verify) should **reuse the same session** via `mcp__opencode__opencode_reply` for cumulative context.
 - OpenCode sessions are **persistent** — they survive server restarts (unlike Codex threads which are in-memory only).
 
@@ -85,6 +85,12 @@ All commands follow this pattern:
 5. Send the real task to OpenCode via `mcp__opencode__opencode_ask` or `mcp__opencode__opencode_run` (via opencode-call.md)
 6. If OpenCode fails or returns empty, fall back to manual analysis (via fallback.md)
 7. Display structured report with sessionId
+
+### Version tracking
+
+When bumping the plugin version, update BOTH files in lockstep:
+- `.claude-plugin/plugin.json` → `version`
+- `.claude-plugin/marketplace.json` → `version`
 
 ### Adding new commands
 

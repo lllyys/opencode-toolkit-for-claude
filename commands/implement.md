@@ -48,12 +48,7 @@ Follow `commands/shared/opencode-call.md` for availability test and call pattern
 - **Use `mcp__opencode__opencode_run`** (this task needs to write files and execute commands)
 
 ```
-prompt: "You are an autonomous implementation agent. Execute plans completely.
-
-{config_focus_instructions if present}
-{config_project_instructions if present}
-
-Execute the following plan completely from start to finish in the current working directory.
+prompt: "Execute the following plan completely from start to finish in the current working directory.
 
 IMPORTANT RULES:
 - Implement EVERY step in the plan. Do not skip anything.
