@@ -141,3 +141,7 @@ Or run `/preflight` inside Claude Code for a human-friendly report.
 This plugin bundles a `.mcp.json` that registers the OpenCode MCP server via `npx -y opencode-mcp`. The MCP bridge auto-starts `opencode serve` if it's not already running, providing seamless access to OpenCode's 79 tools, 10 resources, and 6 prompts.
 
 Authentication is handled by OpenCode's own config — set API keys via `opencode auth login` or environment variables for your chosen providers.
+
+## Acknowledgments
+
+This project is a redesign of [codex-toolkit-for-claude](https://github.com/xiaolai/codex-toolkit-for-claude) by [xiaolai](https://github.com/xiaolai), adapted to use [OpenCode](https://opencode.ai) instead of OpenAI Codex. The command structure, shared partial architecture, and audit dimension frameworks are derived from the original work.
