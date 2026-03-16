@@ -47,16 +47,16 @@ First, add the marketplace (once):
 Then install:
 
 ```
-/plugin install opencode-toolkit@opencode-toolkit-for-claude
+/plugin install opencode-toolkit@lllyys
 ```
 
 Choose an install scope based on your needs:
 
 | Scope | Command | Effect |
 |-------|---------|--------|
-| **User** (default) | `/plugin install opencode-toolkit@opencode-toolkit-for-claude` | Available in all your projects |
-| **Project** | `/plugin install opencode-toolkit@opencode-toolkit-for-claude --scope project` | Shared with team via `.claude/settings.json` (committed to repo) |
-| **Local** | `/plugin install opencode-toolkit@opencode-toolkit-for-claude --scope local` | Only you, only this repo (gitignored) |
+| **User** (default) | `/plugin install opencode-toolkit@lllyys` | Available in all your projects |
+| **Project** | `/plugin install opencode-toolkit@lllyys --scope project` | Shared with team via `.claude/settings.json` (committed to repo) |
+| **Local** | `/plugin install opencode-toolkit@lllyys --scope local` | Only you, only this repo (gitignored) |
 
 ### Configure for your project (optional)
 
