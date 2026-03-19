@@ -91,12 +91,11 @@ PROVIDERS=()
 # Try `opencode auth list` to see configured providers
 AUTH_OUTPUT=$(opencode auth list 2>&1) || true
 
-if echo "$AUTH_OUTPUT" | grep -qiE "anthropic|openai|google|kimi|deepseek|ollama|openrouter"; then
+if echo "$AUTH_OUTPUT" | grep -qiE "^\s*(anthropic|openai|google|kimi|deepseek|ollama|openrouter)\b"; then
   AUTH_STATUS="authenticated"
-  # Extract provider names from auth output
+  # Extract provider names from auth output (match known provider names at line start)
   while IFS= read -r line; do
-    # Look for provider names in the output
-    provider=$(echo "$line" | grep -oiE "^[a-z_-]+" | head -1)
+    provider=$(echo "$line" | grep -oiE "^\s*(anthropic|openai|google|kimi|deepseek|ollama|openrouter)" | tr -d ' ' | head -1)
     if [[ -n "$provider" ]]; then
       PROVIDERS+=("$provider")
     fi
@@ -104,12 +103,13 @@ if echo "$AUTH_OUTPUT" | grep -qiE "anthropic|openai|google|kimi|deepseek|ollama
   info "Auth status: authenticated"
 else
   # Check for common API key environment variables
-  if [[ -n "${ANTHROPIC_API_KEY:-}" || -n "${OPENAI_API_KEY:-}" || -n "${GOOGLE_API_KEY:-}" || -n "${KIMI_API_KEY:-}" ]]; then
+  if [[ -n "${ANTHROPIC_API_KEY:-}" || -n "${OPENAI_API_KEY:-}" || -n "${GOOGLE_API_KEY:-}" || -n "${KIMI_API_KEY:-}" || -n "${OPENCODE_API_KEY:-}" ]]; then
     AUTH_STATUS="api_key"
     [[ -n "${ANTHROPIC_API_KEY:-}" ]] && PROVIDERS+=("anthropic")
     [[ -n "${OPENAI_API_KEY:-}" ]] && PROVIDERS+=("openai")
     [[ -n "${GOOGLE_API_KEY:-}" ]] && PROVIDERS+=("google")
     [[ -n "${KIMI_API_KEY:-}" ]] && PROVIDERS+=("kimi-for-coding")
+    [[ -n "${OPENCODE_API_KEY:-}" ]] && PROVIDERS+=("opencode")
     info "Auth status: api_key"
   fi
 
@@ -139,17 +139,19 @@ PYEOF
 fi
 
 if [[ "$AUTH_STATUS" == "unknown" ]]; then
-  OPENCODE_VERSION_SAFE=$(json_escape "$OPENCODE_VERSION")
-  cat <<JSON
-{"status":"error","error":"No providers configured. Run: opencode auth login","auth_status":"none","opencode_version":"$OPENCODE_VERSION_SAFE","providers":[],"models":[],"models_detail":[]}
-JSON
-  exit 1
+  # Last resort: the OpenCode MCP server may have built-in providers (e.g. "opencode" with free models)
+  # that are not visible via CLI auth. Assume "opencode" provider is available as a fallback.
+  info "No CLI/env providers found. Adding built-in 'opencode' provider (free models)."
+  AUTH_STATUS="builtin"
+  PROVIDERS+=("opencode")
 fi
 
 # Deduplicate providers
-UNIQUE_PROVIDERS=($(printf '%s\n' "${PROVIDERS[@]}" | sort -u))
-PROVIDERS=("${UNIQUE_PROVIDERS[@]}")
-info "Providers: ${PROVIDERS[*]}"
+if [[ ${#PROVIDERS[@]} -gt 0 ]]; then
+  UNIQUE_PROVIDERS=($(printf '%s\n' "${PROVIDERS[@]}" | sort -u))
+  PROVIDERS=("${UNIQUE_PROVIDERS[@]}")
+fi
+info "Providers: ${PROVIDERS[*]+"${PROVIDERS[*]}"}"
 
 # ── Step 4: Discover models ──────────────────────────────────────────────────
 
@@ -266,6 +268,13 @@ if [[ ${#MODELS[@]} -eq 0 ]]; then
         for m in "ollama/llama3.1" "ollama/codellama"; do
           if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
           WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m (local)\"}"
+          MODELS+=("$m")
+        done
+        ;;
+      opencode)
+        for m in "opencode/big-pickle" "opencode/mimo-v2-omni-free" "opencode/mimo-v2-pro-free" "opencode/minimax-m2.5-free" "opencode/nemotron-3-super-free" "opencode/mimo-v2-flash-free" "opencode/gpt-5-nano"; do
+          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
+          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m (free)\"}"
           MODELS+=("$m")
         done
         ;;
