@@ -48,7 +48,7 @@ scripts/
 
 ### Model selection
 
-- Models use `provider/model` format (e.g. `openai/gpt-4o`, `google/gemini-2.5-flash`).
+- Models use `provider/model` format (e.g. `opencode/big-pickle`, `openai/gpt-4o`).
 - OpenCode supports 75+ providers. The preflight script discovers available providers and models.
 - There is no `model_reasoning_effort` parameter — this concept does not exist in OpenCode.
 - There is no `sandbox` parameter — OpenCode manages permissions via its own configuration.

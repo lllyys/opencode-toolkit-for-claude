@@ -1,0 +1,35 @@
+{
+  "_comment": "Fallback model list used when `opencode models` CLI discovery fails. Run `bash scripts/update-models.sh` to refresh from the live MCP server.",
+  "anthropic": [
+    "anthropic/claude-sonnet-4-5",
+    "anthropic/claude-haiku-4-5"
+  ],
+  "openai": [
+    "openai/gpt-4o",
+    "openai/o3-mini"
+  ],
+  "google": [
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro"
+  ],
+  "kimi-for-coding": [
+    "kimi-for-coding/k2p5"
+  ],
+  "deepseek": [
+    "deepseek/deepseek-chat",
+    "deepseek/deepseek-reasoner"
+  ],
+  "ollama": [
+    "ollama/llama3.1",
+    "ollama/codellama"
+  ],
+  "opencode": [
+    "opencode/big-pickle",
+    "opencode/mimo-v2-omni-free",
+    "opencode/mimo-v2-pro-free",
+    "opencode/minimax-m2.5-free",
+    "opencode/nemotron-3-super-free",
+    "opencode/mimo-v2-flash-free",
+    "opencode/gpt-5-nano"
+  ]
+}

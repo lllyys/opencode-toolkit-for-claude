@@ -91,11 +91,11 @@ PROVIDERS=()
 # Try `opencode auth list` to see configured providers
 AUTH_OUTPUT=$(opencode auth list 2>&1) || true
 
-if echo "$AUTH_OUTPUT" | grep -qiE "^\s*(anthropic|openai|google|kimi|deepseek|ollama|openrouter)\b"; then
+if echo "$AUTH_OUTPUT" | grep -qiE "^\s*(opencode|anthropic|openai|google|kimi|deepseek|ollama|openrouter)\b"; then
   AUTH_STATUS="authenticated"
   # Extract provider names from auth output (match known provider names at line start)
   while IFS= read -r line; do
-    provider=$(echo "$line" | grep -oiE "^\s*(anthropic|openai|google|kimi|deepseek|ollama|openrouter)" | tr -d ' ' | head -1)
+    provider=$(echo "$line" | grep -oiE "^\s*(opencode|anthropic|openai|google|kimi|deepseek|ollama|openrouter)" | tr -d ' ' | head -1)
     if [[ -n "$provider" ]]; then
       PROVIDERS+=("$provider")
     fi
@@ -221,67 +221,56 @@ for m in json.load(sys.stdin):
 " 2>/dev/null)
 fi
 
-# If no models discovered via CLI, add well-known models for detected providers.
-# NOTE: These are fallback defaults — update periodically as model names change.
-if [[ ${#MODELS[@]} -eq 0 ]]; then
-  info "No models discovered via CLI, using well-known defaults for configured providers"
-  WELL_KNOWN_DETAIL="["
-  first=true
-  for provider in "${PROVIDERS[@]}"; do
-    case "$provider" in
-      anthropic)
-        for m in "anthropic/claude-sonnet-4-5" "anthropic/claude-haiku-4-5"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      openai)
-        for m in "openai/gpt-4o" "openai/o3-mini"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      google)
-        for m in "google/gemini-2.5-flash" "google/gemini-2.5-pro"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      kimi-for-coding|kimi)
-        for m in "kimi-for-coding/k2p5"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      deepseek)
-        for m in "deepseek/deepseek-chat" "deepseek/deepseek-reasoner"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      ollama)
-        for m in "ollama/llama3.1" "ollama/codellama"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m (local)\"}"
-          MODELS+=("$m")
-        done
-        ;;
-      opencode)
-        for m in "opencode/big-pickle" "opencode/mimo-v2-omni-free" "opencode/mimo-v2-pro-free" "opencode/minimax-m2.5-free" "opencode/nemotron-3-super-free" "opencode/mimo-v2-flash-free" "opencode/gpt-5-nano"; do
-          if $first; then first=false; else WELL_KNOWN_DETAIL+=","; fi
-          WELL_KNOWN_DETAIL+="{\"slug\":\"$m\",\"description\":\"$m (free)\"}"
-          MODELS+=("$m")
-        done
-        ;;
-    esac
-  done
-  WELL_KNOWN_DETAIL+="]"
-  MODELS_DETAIL="$WELL_KNOWN_DETAIL"
+# If no models discovered via CLI, load well-known models from JSON file.
+# To update the fallback list: bash scripts/update-models.sh
+WELL_KNOWN_FILE="$(cd "$(dirname "$0")" && pwd)/well-known-models.json"
+
+if [[ ${#MODELS[@]} -eq 0 && -f "$WELL_KNOWN_FILE" ]] && command -v python3 &>/dev/null; then
+  info "No models discovered via CLI, loading fallback from well-known-models.json"
+  # Pass providers as argv, well-known file path as argv[1]
+  WELL_KNOWN_OUTPUT=$(python3 - "$WELL_KNOWN_FILE" "${PROVIDERS[@]}" <<'PYEOF'
+import json, sys
+
+well_known_path = sys.argv[1]
+providers = sys.argv[2:]
+
+with open(well_known_path) as f:
+    data = json.load(f)
+
+models = []
+detail = []
+for provider in providers:
+    # Try exact match first, then try alias (e.g. "kimi" -> "kimi-for-coding")
+    provider_models = data.get(provider, [])
+    if not provider_models:
+        for key in data:
+            if key == "_comment":
+                continue
+            if provider in key or key in provider:
+                provider_models = data[key]
+                break
+    for slug in provider_models:
+        models.append(slug)
+        suffix = " (free)" if slug.startswith("opencode/") else " (local)" if slug.startswith("ollama/") else ""
+        detail.append({"slug": slug, "description": slug + suffix})
+
+print(json.dumps({"models": models, "detail": detail}))
+PYEOF
+  ) || true
+
+  if [[ -n "$WELL_KNOWN_OUTPUT" ]]; then
+    while IFS= read -r slug; do
+      [[ -n "$slug" ]] && MODELS+=("$slug")
+    done < <(echo "$WELL_KNOWN_OUTPUT" | python3 -c "
+import json, sys
+for m in json.load(sys.stdin)['models']:
+    print(m)
+" 2>/dev/null)
+    MODELS_DETAIL=$(echo "$WELL_KNOWN_OUTPUT" | python3 -c "
+import json, sys
+print(json.dumps(json.load(sys.stdin)['detail']))
+" 2>/dev/null)
+  fi
 fi
 
 if [[ ${#MODELS[@]} -eq 0 ]]; then

@@ -40,10 +40,10 @@ Parse the JSON output. The structure is:
   "status": "ok",
   "opencode_version": "...",
   "auth_status": "...",
-  "providers": ["openai", "google", ...],
-  "models": ["openai/gpt-4o", "google/gemini-2.5-flash", ...],
+  "providers": ["opencode", "openai", ...],
+  "models": ["opencode/big-pickle", "openai/gpt-4o", ...],
   "models_detail": [
-    {"slug": "openai/gpt-4o", "description": "..."},
+    {"slug": "opencode/big-pickle", "description": "..."},
     ...
   ]
 }
