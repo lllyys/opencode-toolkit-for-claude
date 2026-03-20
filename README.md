@@ -29,9 +29,9 @@ opencode auth login
 Or set API keys directly:
 
 ```bash
-export ANTHROPIC_API_KEY="your-key"
+export OPENCODE_API_KEY="your-key"
 export OPENAI_API_KEY="your-key"
-export KIMI_API_KEY="your-key"
+export ANTHROPIC_API_KEY="your-key"
 ```
 
 3. The plugin uses [opencode-mcp](https://www.npmjs.com/package/opencode-mcp) as the MCP bridge (installed automatically via npx).
@@ -90,7 +90,7 @@ If no config file exists, commands use sensible built-in defaults.
 
 Each command follows the same pattern:
 
-1. **Choose model** — pick a provider/model from discovered options (e.g. `anthropic/claude-sonnet-4-5`, `openai/gpt-4o`)
+1. **Choose model** — pick a provider/model from discovered options (e.g. `openai/gpt-4o`, `google/gemini-2.5-flash`)
 2. **Send to OpenCode** — the task is dispatched via `opencode-mcp` MCP tools with a role-specific persona
 3. **Fallback** — if OpenCode is unavailable or returns empty, Claude performs the task manually
 4. **Report** — structured output with findings, verdicts, session ID, and next steps
@@ -103,7 +103,7 @@ Every command output includes a **session ID** that you can pass to `/continue` 
 |---------|---------------|------------------|
 | Backend | OpenAI Codex | OpenCode (75+ providers) |
 | MCP server | `codex mcp-server` | `opencode-mcp` (npm) |
-| Model format | `slug` (e.g. `o3-pro`) | `provider/model` (e.g. `anthropic/claude-sonnet-4-5`) |
+| Model format | `slug` (e.g. `o3-pro`) | `provider/model` (e.g. `openai/gpt-4o`) |
 | Session persistence | In-memory (lost on restart) | Persistent (survives restarts) |
 | Sandbox levels | read-only / workspace-write / danger-full-access | Managed by OpenCode config |
 | Reasoning effort | low / medium / high | N/A (model-dependent) |
